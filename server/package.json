@@ -8,6 +8,7 @@
     "dev": "nodemon --watch src src/index.js",
     "start": "node src/index.js",
     "seed": "node scripts/seed.js",
+    "seed:dev": "node scripts/seed-dev.js",
     "test": "vitest run"
   },
   "dependencies": {

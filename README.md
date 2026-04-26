@@ -62,7 +62,12 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 # 5. Seed the courses list (idempotent — re-run any time)
 npm run seed
 
-# 6. Start dev (server on :5050, client on :5173, both with HMR)
+# 6. Seed dev test data: a test user + posts + replies + likes (recommended for everyone)
+npm run seed:dev
+#   prints:  email: devuser@mail.mcgill.ca   password: devpass123
+#   you can log in as this user immediately.
+
+# 7. Start dev (server on :5050, client on :5173, both with HMR)
 npm run dev
 ```
 
@@ -70,7 +75,44 @@ Open <http://localhost:5173>.
 
 ---
 
+## Day 1 quickstart — what every teammate can do *immediately*, with zero dependencies
+
+After running `npm run seed:dev`, your DB has:
+- A test user (`devuser@mail.mcgill.ca` / `devpass123`)
+- That user enrolled in `COMP 307` and `COMP 251`
+- 3 sample posts in COMP 307, each with 1 reply and 1 like
+
+So you can log in and see real data flowing through your routes / components from minute one.
+
+### Danny — Day 1 plan
+1. Open `server/src/routes/courses.js`. Implement the 4 endpoints by following the pseudocode.
+2. Test each endpoint via `server/requests.http` (REST Client extension, click "Send Request").
+3. Open `client/src/components/CourseCard.jsx`, then `client/src/pages/CourseList.jsx`. Build them out.
+4. Visit `/courses` in the browser — your card grid + search + add-course form should work.
+5. **You don't depend on Ray or Donovan for any of this.**
+
+### Ray — Day 1 plan
+1. Open `server/src/routes/posts.js` (start with the `hydrate()` helper, then the `GET` list).
+2. Hit `GET /api/courses/:courseId/posts` in `requests.http` — should return the 3 seeded posts.
+3. Then `routes/replies.js`, then the React components in this order:
+   `MarkdownView` → `PostCard` → `PostEditor` → `ReplyList` → `CourseBoard` → `PostDetail`.
+4. **You don't depend on Donovan**: `PostDetail` imports `<LikeButton />` which has a stub already (renders an empty button) — your page renders fine while you wait.
+5. **You don't depend on Danny**: you only need the course `_id` from the URL; the seeded courses give you that.
+
+### Donovan — Day 1 plan
+1. Open `server/src/routes/likes.js` and `server/src/routes/me.js`. Implement both — they're small.
+2. Test both via `server/requests.http`. The seeded data already has likes and posts to query against.
+3. Open `client/src/components/LikeButton.jsx` and build it. Test it in isolation by visiting any post's URL once you have a post id (any of the seeded posts works).
+4. Then `client/src/pages/Dashboard.jsx` and `client/src/pages/Profile.jsx`. Your seeded user has 2 enrollments and 3 posts, so both pages will display real data.
+5. **You don't depend on Ray**: your `LikeButton` is a self-contained component; you can render it anywhere. To test it inside Ray's `PostDetail`, his page already has a stub that imports `LikeButton`, so it shows up the moment Ray writes the surrounding markup.
+6. **You don't depend on Danny**: `Dashboard` imports `<CourseCard />` which has a stub (renders an empty card div). Your grid + greeting + empty-state logic still work; cards just show placeholders until Danny finishes.
+
+---
+
 ## Workflow
+
+> **All three of you start coding on Day 1, in parallel.** No one waits for anyone else.
+> Every file you own already has its imports, function signatures, and pseudocode in place.
 
 ```bash
 # Each teammate works on their own branch
@@ -86,10 +128,21 @@ git commit -m "feat(courses): list endpoint"
 git push -u origin feature/courses
 ```
 
-Merge order is recommended:
-1. **Danny's PR** first — no one depends on his implementation details.
-2. **Ray's PR** next — needs Course IDs from URL params, but that's it.
-3. **Donovan's PR** last — uses Post IDs from B and Enrollments from A.
+### How can you work in parallel without waiting?
+
+1. **All schemas are already defined** in `server/src/models/*.js`. The data shapes are locked, so you can write your routes against them today.
+2. **All routes are already mounted** in `server/src/index.js`. Your endpoints are already in the URL space — you just have to fill in the bodies.
+3. **All API contracts are documented** in this README and in `server/requests.http`. You don't need to ask "what does endpoint X return?" — it's already specified.
+4. **Component stubs render**. The files you don't own contain stub components that render an empty card / empty page — your code that imports them won't crash.
+5. **Use `npm run seed:dev`** to populate the DB with a test user + sample posts/replies/likes (see *Day 1 quickstart* below). Means you can manually test your feature without waiting for teammates.
+
+### Suggested **merge** order (only matters for the final integration, NOT for when you start)
+
+When all three PRs are ready and tests pass, merge them in this order to keep `main` clean:
+
+1. **Danny's PR** — no one depends on its implementation, easiest baseline.
+2. **Ray's PR** — needs Course IDs from URL params, but that's it.
+3. **Donovan's PR** — reads Post and Enrollment data, so easiest to test against the others' merged code.
 
 Each PR should be reviewed by at least one other teammate.
 
