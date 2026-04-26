@@ -1,4 +1,5 @@
 import { verifyToken } from '../lib/jwt.js';
+import { isAdminEmail } from '../lib/admin.js';
 import { ApiError } from './errorHandler.js';
 
 export function requireAuth(req, res, next) {
@@ -8,7 +9,11 @@ export function requireAuth(req, res, next) {
 
   try {
     const payload = verifyToken(match[1]);
-    req.user = { userId: payload.userId, email: payload.email };
+    req.user = {
+      userId: payload.userId,
+      email: payload.email,
+      isAdmin: isAdminEmail(payload.email),
+    };
     next();
   } catch {
     next(new ApiError(401, 'invalid_token', 'Invalid or expired token'));

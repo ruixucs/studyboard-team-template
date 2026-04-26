@@ -31,6 +31,28 @@ Authorization: Bearer {{token}}
 ### List courses
 GET http://localhost:5050/api/courses?search=COMP
 
+### Create course (catalog-validated; auto-fills name + faculty)
+POST http://localhost:5050/api/courses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "code": "COMP 424"
+}
+
+### Create course — expect 404 not_in_catalog
+POST http://localhost:5050/api/courses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "code": "FAKE 999"
+}
+
+### Delete course — admin only (replace COURSE_ID)
+DELETE http://localhost:5050/api/courses/COURSE_ID
+Authorization: Bearer {{token}}
+
 ### My courses
 GET http://localhost:5050/api/me/courses
 Authorization: Bearer {{token}}

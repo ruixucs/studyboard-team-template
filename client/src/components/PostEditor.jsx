@@ -1,52 +1,3 @@
-/**
- * ============================================================================
- *  Feature B — Posts & Replies
- *  Owner: Ray
- *  File:  client/src/components/PostEditor.jsx
- *
- *  A reusable editor for both creating a new post and editing an existing one.
- *  Used by CourseBoard (create) and PostDetail (edit).
- *
- *  Props:
- *    initialTitle  (default '')
- *    initialBody   (default '')
- *    onSubmit({ title, body })   // async; the parent does the actual API call
- *    onCancel?                   // optional cancel button
- *    submitLabel   (default 'Post')
- *
- *  Features:
- *    - Title input (max 200 chars)
- *    - Body textarea (max 10000 chars)
- *    - "Write" / "Preview" tabs — preview uses <MarkdownView source={body} />
- *    - Validates: title and body must both be non-empty before submitting
- *    - Disables submit while busy; surfaces server error messages
- *
- *  Local state to keep:
- *    title, body, preview (bool), busy, err
- *
- *  Submit handler:
- *    e.preventDefault()
- *    if (!title.trim() || !body.trim()) return setErr('Title and body are required')
- *    setBusy(true)
- *    try { await onSubmit({ title: title.trim(), body }) }
- *    catch (e) { setErr(e?.response?.data?.error?.message || e.message) }
- *    finally { setBusy(false) }
- *
- *  Layout:
- *    <form onSubmit={submit} className="space-y-3 rounded-xl border ... p-4">
- *      <input title ... />
- *      <div tabs row>  Write | Preview |  span "Markdown + code blocks supported" </div>
- *      {preview ? <div border> <MarkdownView source={body} /> </div>
- *               : <textarea body ... />}
- *      {err && <p className="text-sm text-red-500">{err}</p>}
- *      <div flex gap-2>
- *        <button submit>{busy ? 'Saving…' : submitLabel}</button>
- *        {onCancel && <button type="button" onClick={onCancel}>Cancel</button>}
- *      </div>
- *    </form>
- * ============================================================================
- */
-
 import { useState } from 'react';
 import MarkdownView from './MarkdownView.jsx';
 
@@ -57,16 +8,87 @@ export default function PostEditor({
   onCancel,
   submitLabel = 'Post',
 }) {
-  // TODO(Ray): state hooks (title, body, preview, busy, err)
+  const [title, setTitle] = useState(initialTitle);
+  const [body, setBody] = useState(initialBody);
+  const [preview, setPreview] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
 
-  // TODO(Ray): submit handler
+  async function submit(e) {
+    e.preventDefault();
+    setErr(null);
+    if (!title.trim() || !body.trim()) {
+      return setErr('Title and body are required');
+    }
+    setBusy(true);
+    try {
+      await onSubmit({ title: title.trim(), body });
+    } catch (e) {
+      setErr(e?.response?.data?.error?.message || e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <form className="space-y-3 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-      {/* TODO(Ray): title input */}
-      {/* TODO(Ray): Write / Preview tabs */}
-      {/* TODO(Ray): preview ? <MarkdownView /> : <textarea /> */}
-      {/* TODO(Ray): error + submit/cancel buttons */}
+    <form onSubmit={submit} className="space-y-3 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+      <input
+        className="w-full px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-transparent text-lg font-semibold"
+        placeholder="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        maxLength={200}
+        required
+      />
+      <div className="flex gap-2 text-sm">
+        <button
+          type="button"
+          onClick={() => setPreview(false)}
+          className={`px-2 py-1 rounded ${!preview ? 'bg-slate-200 dark:bg-slate-800' : ''}`}
+        >
+          Write
+        </button>
+        <button
+          type="button"
+          onClick={() => setPreview(true)}
+          className={`px-2 py-1 rounded ${preview ? 'bg-slate-200 dark:bg-slate-800' : ''}`}
+        >
+          Preview
+        </button>
+        <span className="ml-auto text-xs text-slate-500">Markdown + code blocks supported</span>
+      </div>
+      {preview ? (
+        <div className="min-h-[10rem] p-3 rounded border border-slate-300 dark:border-slate-700">
+          <MarkdownView source={body} />
+        </div>
+      ) : (
+        <textarea
+          className="w-full min-h-[10rem] px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-transparent font-mono text-sm"
+          placeholder="Share your question, notes, or key points…"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          maxLength={10000}
+          required
+        />
+      )}
+      {err && <p className="text-sm text-red-500">{err}</p>}
+      <div className="flex gap-2">
+        <button
+          disabled={busy}
+          className="px-4 py-2 rounded bg-accent hover:bg-accent-hover text-white font-medium disabled:opacity-60"
+        >
+          {busy ? 'Saving…' : submitLabel}
+        </button>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 rounded border border-slate-300 dark:border-slate-700"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }

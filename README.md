@@ -65,13 +65,39 @@ npm run seed
 # 6. Seed dev test data: a test user + posts + replies + likes (recommended for everyone)
 npm run seed:dev
 #   prints:  email: devuser@mail.mcgill.ca   password: devpass123
-#   you can log in as this user immediately.
+#   you can log in as this user immediately. The default ADMIN_EMAILS in
+#   .env.example marks this user as admin so you can test admin-only features.
 
 # 7. Start dev (server on :5050, client on :5173, both with HMR)
 npm run dev
 ```
 
 Open <http://localhost:5173>.
+
+---
+
+## Admin role
+
+Set `ADMIN_EMAILS` in `server/.env` (comma-separated) to grant admin powers. Admins can:
+- `DELETE /api/courses/:id` — delete any course (cascading posts / replies / likes / enrollments).
+
+`server/.env.example` defaults to `ADMIN_EMAILS=devuser@mail.mcgill.ca`, so the dev seed user is already admin in local dev.
+
+To add another admin, append the email to the comma-separated list and restart the server:
+
+```
+ADMIN_EMAILS=devuser@mail.mcgill.ca,you@mcgill.ca
+```
+
+## Course catalog
+
+New courses (`POST /api/courses`) are validated against the official McGill course catalog (CC0 data from [mcgill-courses/mcgill.courses](https://github.com/mcgill-courses/mcgill.courses)). When a user submits a code, the server looks it up and auto-fills `name` and `faculty` — there is no free-form name/faculty entry.
+
+The trimmed catalog (~1MB) is committed at `server/data/mcgill-catalog.json` and loaded into memory at server start. To refresh to a newer year, run:
+
+```
+npm run build:catalog   # re-downloads from upstream and rewrites the JSON
+```
 
 ---
 
@@ -171,6 +197,7 @@ These are the things you **must** agree on so the three modules compose. They ar
 | `POST`   | `/api/courses`                        | A        | required |
 | `POST`   | `/api/courses/:id/enroll`             | A        | required |
 | `DELETE` | `/api/courses/:id/enroll`             | A        | required |
+| `DELETE` | `/api/courses/:id`                    | A        | **admin only** |
 | `GET`    | `/api/courses/:courseId/posts`        | B        | required |
 | `GET`    | `/api/posts/:id`                      | B        | required |
 | `POST`   | `/api/courses/:courseId/posts`        | B        | required |
