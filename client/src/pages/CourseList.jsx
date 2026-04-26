@@ -10,8 +10,6 @@ export default function CourseList() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [newCode, setNewCode] = useState('');
-  const [newName, setNewName] = useState('');
-  const [newFac, setNewFac] = useState('');
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState('');
   const [sortBy, setSortBy] = useState('code');
@@ -48,19 +46,13 @@ export default function CourseList() {
 
   const onAdd = async (e) => {
     e.preventDefault();
-    if (!newCode.trim() || !newName.trim() || !newFac.trim()) return;
+    if (!newCode.trim()) return;
 
     setAdding(true);
     setErr('');
     try {
-      await api.post('/courses', {
-        code: newCode.trim(),
-        name: newName.trim(),
-        faculty: newFac.trim(),
-      });
+      await api.post('/courses', { code: newCode.trim() });
       setNewCode('');
-      setNewName('');
-      setNewFac('');
       await load(q);
       setPage(1);
     } catch (error) {
@@ -146,31 +138,22 @@ export default function CourseList() {
 
       <details className="mb-4 rounded-lg border border-slate-200 dark:border-slate-800 p-4">
         <summary className="cursor-pointer font-medium text-slate-900 dark:text-slate-100">Add a course</summary>
-        <form onSubmit={onAdd} className="mt-3 grid gap-3 sm:grid-cols-3">
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          Type a McGill course code. Name and faculty are filled in automatically from the official catalog.
+        </p>
+        <form onSubmit={onAdd} className="mt-3 flex flex-col gap-2 sm:flex-row">
           <input
             value={newCode}
             onChange={(e) => setNewCode(e.target.value)}
-            placeholder="Code"
-            className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 px-3 py-2"
-          />
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Name"
-            className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 px-3 py-2"
-          />
-          <input
-            value={newFac}
-            onChange={(e) => setNewFac(e.target.value)}
-            placeholder="Faculty"
-            className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 px-3 py-2"
+            placeholder="Course code (e.g. COMP 424)"
+            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 px-3 py-2"
           />
           <button
             type="submit"
             disabled={adding}
-            className="sm:col-span-3 rounded-lg bg-accent hover:bg-accent-hover text-white px-4 py-2 disabled:opacity-60"
+            className="rounded-lg bg-accent hover:bg-accent-hover text-white px-4 py-2 disabled:opacity-60"
           >
-            {adding ? 'Adding...' : 'Create course'}
+            {adding ? 'Adding…' : 'Add'}
           </button>
         </form>
       </details>
