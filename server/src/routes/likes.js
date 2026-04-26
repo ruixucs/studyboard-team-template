@@ -32,24 +32,26 @@ const router = Router();
 // ----------------------------------------------------------------------------
 router.post('/posts/:id/like', requireAuth, async (req, res, next) => {
   try {
-    if (!isValidObjectId(req.params.id)) throw 400
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      throw new ApiError(400, 'invalid_id', 'Invalid post id');
+    }
 
-    const post = await Post.findById(req.params.id)
+    const post = await Post.findById(req.params.id);
+    if (!post) throw new ApiError(404, 'post_not_found', 'Post not found');
 
-    if (!post) throw 404
     try {
-      await Like.create({ userId: req.user.userId, postId: post._id })
-      await Post.updateOne({ _id: post._id }, { $inc: { likeCount: 1 } })
+      await Like.create({ userId: req.user.userId, postId: post._id });
+      await Post.updateOne({ _id: post._id }, { $inc: { likeCount: 1 } });
     } catch (err) {
       if (err.code === 11000) {
-        const fresh = await Post.findById(post._id)
-        return res.json({ likeCount: fresh.likeCount, alreadyLiked: true })
+        const fresh = await Post.findById(post._id);
+        return res.json({ likeCount: fresh.likeCount, alreadyLiked: true });
       }
-      throw err
+      throw err;
     }
-    const fresh = await Post.findById(post._id)
-    res.json({ likeCount: fresh.likeCount })
-    //    res.status(501).json({ error: 'not implemented' });
+
+    const fresh = await Post.findById(post._id);
+    res.json({ likeCount: fresh.likeCount });
   } catch (err) {
     next(err);
   }
@@ -60,15 +62,17 @@ router.post('/posts/:id/like', requireAuth, async (req, res, next) => {
 // ----------------------------------------------------------------------------
 router.delete('/posts/:id/like', requireAuth, async (req, res, next) => {
   try {
-    if (!isValidObjectId(req.params.id)) throw 400
-    const post = await Post.findById(req.params.id)
-    if (!post) throw 404
-    const result = await Like.deleteOne({ userId: req.user.userId, postId: req.params.id })
-    if (result.deletedCount > 0) {
-      await Post.updateOne({ _id: req.params.id }, { $inc: { likeCount: -1 } })
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      throw new ApiError(400, 'invalid_id', 'Invalid post id');
     }
-    const fresh = await Post.findById(req.params.id)
-    res.json({ likeCount: fresh?.likeCount ?? 0 })
+
+    const result = await Like.deleteOne({ userId: req.user.userId, postId: req.params.id });
+    if (result.deletedCount > 0) {
+      await Post.updateOne({ _id: req.params.id }, { $inc: { likeCount: -1 } });
+    }
+
+    const fresh = await Post.findById(req.params.id);
+    res.json({ likeCount: fresh?.likeCount ?? 0 });
   } catch (err) {
     next(err);
   }
