@@ -8,6 +8,8 @@ import { Like } from '../models/Like.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { verifyToken } from '../lib/jwt.js';
+import { isAdminEmail } from '../lib/admin.js';
+import { lookupCatalog, formatDisplayCode } from '../lib/courseCatalog.js';
 
 const router = Router();
 
@@ -22,13 +24,13 @@ router.get('/', async (req, res, next) => {
 
     const courses = await Course.find(filter).sort({ code: 1 }).limit(200).lean();
     let enrolledSet = new Set();
-    let currentUserId = null;
+    let isAdmin = false;
 
     const m = (req.headers.authorization || '').match(/^Bearer (.+)$/);
     if (m) {
       try {
         const payload = verifyToken(m[1]);
-        currentUserId = payload.userId;
+        isAdmin = isAdminEmail(payload.email);
         const enrollments = await Enrollment.find({ userId: payload.userId }).lean();
         enrolledSet = new Set(enrollments.map((e) => e.courseId.toString()));
       } catch {}
@@ -41,7 +43,7 @@ router.get('/', async (req, res, next) => {
         name: c.name,
         faculty: c.faculty,
         enrolled: enrolledSet.has(c._id.toString()),
-        canDelete: Boolean(currentUserId && c.createdBy && c.createdBy.toString() === currentUserId),
+        canDelete: isAdmin,
       }))
     );
   } catch (err) {
@@ -52,27 +54,29 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', requireAuth, async (req, res, next) => {
   try {
-    const { code, name, faculty } = req.body || {};
-    if (!code || !name || !faculty) {
-      throw new ApiError(400, 'missing_fields', 'code, name, and faculty are required');
+    const { code } = req.body || {};
+    if (!code || !String(code).trim()) {
+      throw new ApiError(400, 'missing_fields', 'Course code is required');
     }
 
-    const normalizedCode = String(code).trim().toUpperCase();
-    const normalizedName = String(name).trim();
-    const normalizedFaculty = String(faculty).trim();
-
-    if (!normalizedCode || !normalizedName || !normalizedFaculty) {
-      throw new ApiError(400, 'missing_fields', 'code, name, and faculty are required');
+    const match = lookupCatalog(code);
+    if (!match) {
+      throw new ApiError(
+        404,
+        'not_in_catalog',
+        'That course is not in the McGill catalog. Ask an admin to add it manually.'
+      );
     }
 
-    if (await Course.findOne({ code: normalizedCode })) {
-      throw new ApiError(409, 'course_exists', 'Course code already exists');
+    const displayCode = formatDisplayCode(match);
+    if (await Course.findOne({ code: displayCode })) {
+      throw new ApiError(409, 'course_exists', 'This course is already on StudyBoard');
     }
 
     const course = await Course.create({
-      code: normalizedCode,
-      name: normalizedName,
-      faculty: normalizedFaculty,
+      code: displayCode,
+      name: match.title,
+      faculty: match.faculty,
       createdBy: req.user.userId,
     });
 
@@ -133,6 +137,10 @@ router.delete('/:id/enroll', requireAuth, async (req, res, next) => {
 
 router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
+    if (!req.user.isAdmin) {
+      throw new ApiError(403, 'forbidden', 'Only admins can delete courses');
+    }
+
     const { id } = req.params;
     if (!mongoose.isValidObjectId(id)) {
       throw new ApiError(400, 'invalid_id', 'Invalid course id');
@@ -141,10 +149,6 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
     const course = await Course.findById(id).lean();
     if (!course) {
       throw new ApiError(404, 'course_not_found', 'Course not found');
-    }
-
-    if (!course.createdBy || course.createdBy.toString() !== req.user.userId) {
-      throw new ApiError(403, 'forbidden', 'You can only delete courses you created');
     }
 
     const posts = await Post.find({ courseId: id }, { _id: 1 }).lean();

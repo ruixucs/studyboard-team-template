@@ -9,6 +9,7 @@
     "start": "node src/index.js",
     "seed": "node scripts/seed.js",
     "seed:dev": "node scripts/seed-dev.js",
+    "build:catalog": "node scripts/build-mcgill-catalog.js",
     "test": "vitest run"
   },
   "dependencies": {
