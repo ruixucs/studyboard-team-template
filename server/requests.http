@@ -1,0 +1,81 @@
+### Health
+GET http://localhost:5050/api/health
+
+### Register
+# @name register
+POST http://localhost:5050/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "demo@mail.mcgill.ca",
+  "password": "Demo1234",
+  "displayName": "Demo User"
+}
+
+### Login
+# @name login
+POST http://localhost:5050/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "demo@mail.mcgill.ca",
+  "password": "Demo1234"
+}
+
+@token = {{login.response.body.token}}
+
+### Me
+GET http://localhost:5050/api/auth/me
+Authorization: Bearer {{token}}
+
+### List courses
+GET http://localhost:5050/api/courses?search=COMP
+
+### My courses
+GET http://localhost:5050/api/me/courses
+Authorization: Bearer {{token}}
+
+### Enroll (replace COURSE_ID)
+POST http://localhost:5050/api/courses/COURSE_ID/enroll
+Authorization: Bearer {{token}}
+
+### Create post
+POST http://localhost:5050/api/courses/COURSE_ID/posts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "How to approach assignment 2?",
+  "body": "Anyone understood the recursion question? Here's my attempt:\n\n```js\nfunction fib(n){\n  if(n<2) return n;\n  return fib(n-1)+fib(n-2);\n}\n```"
+}
+
+### List posts (latest)
+GET http://localhost:5050/api/courses/COURSE_ID/posts
+Authorization: Bearer {{token}}
+
+### List posts (hot)
+GET http://localhost:5050/api/courses/COURSE_ID/posts?sort=hot
+Authorization: Bearer {{token}}
+
+### Single post
+GET http://localhost:5050/api/posts/POST_ID
+Authorization: Bearer {{token}}
+
+### Like
+POST http://localhost:5050/api/posts/POST_ID/like
+Authorization: Bearer {{token}}
+
+### Unlike
+DELETE http://localhost:5050/api/posts/POST_ID/like
+Authorization: Bearer {{token}}
+
+### Reply
+POST http://localhost:5050/api/posts/POST_ID/replies
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "body": "Great question — I had the same one." }
+
+### Activity
+GET http://localhost:5050/api/me/activity
+Authorization: Bearer {{token}}

@@ -1,0 +1,43 @@
+# deps
+node_modules/
+
+# only root package-lock.json should be tracked (npm workspaces share lock)
+client/package-lock.json
+server/package-lock.json
+
+# build
+client/dist/
+server/dist/
+
+# env
+.env
+.env.local
+server/.env
+
+# SSH keys — NEVER commit these
+cs307-group44-key
+cs307-group44-key.pub
+*.pem
+id_rsa*
+id_ed25519*
+
+# Claude / agent caches
+.claude/
+
+# Cursor
+.cursorindexingignore
+
+# logs
+*.log
+npm-debug.log*
+
+# editor
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# misc
+.specstory/
+*.pdf

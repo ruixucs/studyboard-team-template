@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* code block styling (overridden per theme in MarkdownView later) */
+pre code.hljs {
+  font-family: theme('fontFamily.mono');
+  font-size: 0.875rem;
+}
