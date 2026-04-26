@@ -1,33 +1,3 @@
-/**
- * ============================================================================
- *  Feature B — Posts & Replies
- *  Owner: Ray
- *  File:  server/src/routes/posts.js
- *
- *  You need to implement 5 endpoints:
- *    1. GET    /api/courses/:courseId/posts?sort=latest|hot   - list posts in a course
- *    2. GET    /api/posts/:id                                  - single post + inline replies
- *    3. POST   /api/courses/:courseId/posts                    - create a new post
- *    4. PATCH  /api/posts/:id                                  - edit (author only)
- *    5. DELETE /api/posts/:id                                  - delete (cascade replies + likes)
- *
- *  Response data contract (the frontend depends on this):
- *    Post = {
- *      id, courseId, title, body,
- *      likeCount, replyCount,
- *      createdAt, updatedAt,
- *      author: { id, displayName },
- *      likedByMe: boolean        // whether the CURRENT user has liked this post
- *    }
- *    PostDetail = Post & { replies: Reply[] }
- *    Reply = { id, body, createdAt, author: { id, displayName } }
- *
- *  Helper:
- *    `hydrate(posts, currentUserId)` — given raw Post documents, returns the
- *    enriched shape above (with author + likedByMe). You write this; pseudocode below.
- * ============================================================================
- */
-
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import { Post } from '../models/Post.js';
@@ -40,152 +10,150 @@ import { ApiError } from '../middleware/errorHandler.js';
 
 const router = Router();
 
-// ----------------------------------------------------------------------------
-// Helper: hydrate(posts, currentUserId)
-// ----------------------------------------------------------------------------
-//  Pseudocode:
-//    if (posts.length === 0) return []
-//    const authorIds = unique post.authorId values
-//    const authors = await User.find({ _id: { $in: authorIds } }).lean()
-//    const byId = new Map(authors.map(a => [a._id.toString(), a]))
-//
-//    let likedSet = new Set()
-//    if (currentUserId) {
-//      const likes = await Like.find({
-//        userId: currentUserId,
-//        postId:  { $in: posts.map(p => p._id) },
-//      }).lean()
-//      likedSet = new Set(likes.map(l => l.postId.toString()))
-//    }
-//
-//    return posts.map(p => ({
-//      id: p._id.toString(),
-//      courseId: p.courseId.toString(),
-//      title: p.title,
-//      body: p.body,
-//      likeCount: p.likeCount,
-//      replyCount: p.replyCount,
-//      createdAt: p.createdAt,
-//      updatedAt: p.updatedAt,
-//      author: byId.has(p.authorId.toString())
-//        ? { id: byId.get(...)._id.toString(), displayName: byId.get(...).displayName }
-//        : { id: null, displayName: '[deleted]' },
-//      likedByMe: likedSet.has(p._id.toString()),
-//    }))
 async function hydrate(posts, currentUserId) {
-  // TODO(Ray): implement as described
-  return [];
+  if (posts.length === 0) return [];
+  const authorIds = [...new Set(posts.map((p) => p.authorId.toString()))];
+  const authors = await User.find({ _id: { $in: authorIds } }).lean();
+  const byId = new Map(authors.map((a) => [a._id.toString(), a]));
+
+  let likedSet = new Set();
+  if (currentUserId) {
+    const likes = await Like.find({
+      userId: currentUserId,
+      postId: { $in: posts.map((p) => p._id) },
+    }).lean();
+    likedSet = new Set(likes.map((l) => l.postId.toString()));
+  }
+
+  return posts.map((p) => {
+    const author = byId.get(p.authorId.toString());
+    return {
+      id: p._id.toString(),
+      courseId: p.courseId.toString(),
+      title: p.title,
+      body: p.body,
+      likeCount: p.likeCount,
+      replyCount: p.replyCount,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      author: author
+        ? { id: author._id.toString(), displayName: author.displayName }
+        : { id: null, displayName: '[deleted]' },
+      likedByMe: likedSet.has(p._id.toString()),
+    };
+  });
 }
 
-// ----------------------------------------------------------------------------
-// 1) GET /api/courses/:courseId/posts?sort=latest|hot
-// ----------------------------------------------------------------------------
-//  Pseudocode:
-//    if (!isValidObjectId(courseId)) throw ApiError(400, 'invalid_id', ...)
-//    const sort = req.query.sort === 'hot'
-//      ? { likeCount: -1, createdAt: -1 }
-//      : { createdAt: -1 }
-//    const posts = await Post.find({ courseId }).sort(sort).limit(100).lean()
-//    res.json(await hydrate(posts, req.user.userId))
+// GET /api/courses/:courseId/posts?sort=latest|hot
 router.get('/courses/:courseId/posts', requireAuth, async (req, res, next) => {
   try {
-    // TODO(Ray)
-    res.json([]);
+    if (!mongoose.isValidObjectId(req.params.courseId)) {
+      throw new ApiError(400, 'invalid_id', 'Invalid course id');
+    }
+    const sort = req.query.sort === 'hot' ? { likeCount: -1, createdAt: -1 } : { createdAt: -1 };
+    const posts = await Post.find({ courseId: req.params.courseId }).sort(sort).limit(100).lean();
+    res.json(await hydrate(posts, req.user.userId));
   } catch (err) {
     next(err);
   }
 });
 
-// ----------------------------------------------------------------------------
-// 2) GET /api/posts/:id  — single post + inline replies
-// ----------------------------------------------------------------------------
-//  Pseudocode:
-//    if (!isValidObjectId(id)) throw 400
-//    const post = await Post.findById(id).lean()
-//    if (!post) throw 404
-//    const [hydrated] = await hydrate([post], req.user.userId)
-//
-//    // attach replies (with author):
-//    const replies = await Reply.find({ postId: post._id }).sort({ createdAt: 1 }).lean()
-//    const replyAuthorIds = unique replies.authorId
-//    const replyAuthors = await User.find({ _id: { $in: replyAuthorIds } }).lean()
-//    hydrated.replies = replies.map(r => ({
-//      id: r._id.toString(),
-//      body: r.body,
-//      createdAt: r.createdAt,
-//      author: { id: ..., displayName: ... } || { id: null, displayName: '[deleted]' },
-//    }))
-//    res.json(hydrated)
+// GET /api/posts/:id  — single post with inline replies
 router.get('/posts/:id', requireAuth, async (req, res, next) => {
   try {
-    // TODO(Ray)
-    res.status(501).json({ error: 'not implemented' });
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      throw new ApiError(400, 'invalid_id', 'Invalid post id');
+    }
+    const post = await Post.findById(req.params.id).lean();
+    if (!post) throw new ApiError(404, 'post_not_found', 'Post not found');
+    const [hydrated] = await hydrate([post], req.user.userId);
+
+    const replies = await Reply.find({ postId: post._id }).sort({ createdAt: 1 }).lean();
+    const replyAuthorIds = [...new Set(replies.map((r) => r.authorId.toString()))];
+    const replyAuthors = await User.find({ _id: { $in: replyAuthorIds } }).lean();
+    const replyById = new Map(replyAuthors.map((a) => [a._id.toString(), a]));
+    hydrated.replies = replies.map((r) => {
+      const a = replyById.get(r.authorId.toString());
+      return {
+        id: r._id.toString(),
+        body: r.body,
+        createdAt: r.createdAt,
+        author: a
+          ? { id: a._id.toString(), displayName: a.displayName }
+          : { id: null, displayName: '[deleted]' },
+      };
+    });
+
+    res.json(hydrated);
   } catch (err) {
     next(err);
   }
 });
 
-// ----------------------------------------------------------------------------
-// 3) POST /api/courses/:courseId/posts   body: { title, body }
-// ----------------------------------------------------------------------------
-//  Pseudocode:
-//    if (!isValidObjectId(courseId)) throw 400
-//    const course = await Course.findById(courseId)
-//    if (!course) throw 404
-//    if (!title || !body) throw ApiError(400, 'missing_fields', ...)
-//    const post = await Post.create({
-//      courseId, authorId: req.user.userId,
-//      title: String(title).trim().slice(0, 200),
-//      body:  String(body).slice(0, 10000),
-//    })
-//    const [hydrated] = await hydrate([post.toObject()], req.user.userId)
-//    res.status(201).json(hydrated)
+// POST /api/courses/:courseId/posts
 router.post('/courses/:courseId/posts', requireAuth, async (req, res, next) => {
   try {
-    // TODO(Ray)
-    res.status(501).json({ error: 'not implemented' });
+    if (!mongoose.isValidObjectId(req.params.courseId)) {
+      throw new ApiError(400, 'invalid_id', 'Invalid course id');
+    }
+    const course = await Course.findById(req.params.courseId);
+    if (!course) throw new ApiError(404, 'course_not_found', 'Course not found');
+
+    const { title, body } = req.body || {};
+    if (!title || !body) throw new ApiError(400, 'missing_fields', 'title and body required');
+
+    const post = await Post.create({
+      courseId: course._id,
+      authorId: req.user.userId,
+      title: String(title).trim().slice(0, 200),
+      body: String(body).slice(0, 10000),
+    });
+    const [hydrated] = await hydrate([post.toObject()], req.user.userId);
+    res.status(201).json(hydrated);
   } catch (err) {
     next(err);
   }
 });
 
-// ----------------------------------------------------------------------------
-// 4) PATCH /api/posts/:id   body: { title?, body? }
-// ----------------------------------------------------------------------------
-//  Pseudocode:
-//    if (!isValidObjectId(id)) throw 400
-//    const post = await Post.findById(id)
-//    if (!post) throw 404
-//    if (post.authorId.toString() !== req.user.userId) throw ApiError(403, 'forbidden', ...)
-//    if (title !== undefined) post.title = String(title).trim().slice(0, 200)
-//    if (body  !== undefined) post.body  = String(body).slice(0, 10000)
-//    await post.save()
-//    const [hydrated] = await hydrate([post.toObject()], req.user.userId)
-//    res.json(hydrated)
+// PATCH /api/posts/:id
 router.patch('/posts/:id', requireAuth, async (req, res, next) => {
   try {
-    // TODO(Ray)
-    res.status(501).json({ error: 'not implemented' });
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      throw new ApiError(400, 'invalid_id', 'Invalid post id');
+    }
+    const post = await Post.findById(req.params.id);
+    if (!post) throw new ApiError(404, 'post_not_found', 'Post not found');
+    if (post.authorId.toString() !== req.user.userId) {
+      throw new ApiError(403, 'forbidden', 'You can only edit your own posts');
+    }
+    const { title, body } = req.body || {};
+    if (title !== undefined) post.title = String(title).trim().slice(0, 200);
+    if (body !== undefined) post.body = String(body).slice(0, 10000);
+    await post.save();
+    const [hydrated] = await hydrate([post.toObject()], req.user.userId);
+    res.json(hydrated);
   } catch (err) {
     next(err);
   }
 });
 
-// ----------------------------------------------------------------------------
-// 5) DELETE /api/posts/:id  — must cascade Replies + Likes
-// ----------------------------------------------------------------------------
-//  Pseudocode:
-//    Validate id; load post; if (!post) 404; if (not author) 403
-//    await Promise.all([
-//      Reply.deleteMany({ postId: post._id }),
-//      Like.deleteMany({ postId: post._id }),
-//      post.deleteOne(),
-//    ])
-//    res.json({ ok: true })
+// DELETE /api/posts/:id  — cascade replies + likes
 router.delete('/posts/:id', requireAuth, async (req, res, next) => {
   try {
-    // TODO(Ray)
-    res.status(501).json({ error: 'not implemented' });
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      throw new ApiError(400, 'invalid_id', 'Invalid post id');
+    }
+    const post = await Post.findById(req.params.id);
+    if (!post) throw new ApiError(404, 'post_not_found', 'Post not found');
+    if (post.authorId.toString() !== req.user.userId) {
+      throw new ApiError(403, 'forbidden', 'You can only delete your own posts');
+    }
+    await Promise.all([
+      Reply.deleteMany({ postId: post._id }),
+      Like.deleteMany({ postId: post._id }),
+      post.deleteOne(),
+    ]);
+    res.json({ ok: true });
   } catch (err) {
     next(err);
   }
