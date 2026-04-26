@@ -13,13 +13,26 @@ import { lookupCatalog, formatDisplayCode } from '../lib/courseCatalog.js';
 
 const router = Router();
 
+// Build a search regex that tolerates missing/extra whitespace between the
+// subject letters and the course number. So "COMP307", "COMP 307", "comp307"
+// and "comp  307" all match the canonical "COMP 307" stored in the DB.
+function buildSearchRegex(q) {
+  // Escape regex metacharacters in user input
+  let pattern = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Allow optional whitespace at letter↔digit transitions
+  pattern = pattern.replace(/([A-Za-z])(\d)/g, '$1\\s*$2');
+  pattern = pattern.replace(/(\d)([A-Za-z])/g, '$1\\s*$2');
+  // Collapse any user-typed whitespace into \s* so "COMP  307" still matches
+  pattern = pattern.replace(/\s+/g, '\\s*');
+  return new RegExp(pattern, 'i');
+}
+
 router.get('/', async (req, res, next) => {
   try {
     const q = (req.query.search || '').toString().trim();
-    const filter = q
-      ? {
-          $or: [{ code: new RegExp(q, 'i') }, { name: new RegExp(q, 'i') }, { faculty: new RegExp(q, 'i') }],
-        }
+    const regex = q ? buildSearchRegex(q) : null;
+    const filter = regex
+      ? { $or: [{ code: regex }, { name: regex }, { faculty: regex }] }
       : {};
 
     const courses = await Course.find(filter).sort({ code: 1 }).limit(200).lean();
