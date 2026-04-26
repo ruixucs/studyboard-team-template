@@ -19,7 +19,7 @@
  */
 
 import { Router } from 'express';
-import mongoose from 'mongoose';
+import mongoose, { isValidObjectId } from 'mongoose';
 import { Like } from '../models/Like.js';
 import { Post } from '../models/Post.js';
 import { requireAuth } from '../middleware/requireAuth.js';
@@ -60,9 +60,11 @@ router.post('/posts/:id/like', requireAuth, async (req, res, next) => {
 // ----------------------------------------------------------------------------
 router.delete('/posts/:id/like', requireAuth, async (req, res, next) => {
   try {
-    if (!isValidObjectId(req.params.id)) throw 400
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      throw new ApiError(400, 'invalid_id', 'Invalid post id');
+    }
     const post = await Post.findById(req.params.id)
-    if (!post) throw 404
+    if (!post) throw new ApiError(404, 'post_not_found', 'Post not found');
     const result = await Like.deleteOne({ userId: req.user.userId, postId: req.params.id })
     if (result.deletedCount > 0) {
       await Post.updateOne({ _id: req.params.id }, { $inc: { likeCount: -1 } })

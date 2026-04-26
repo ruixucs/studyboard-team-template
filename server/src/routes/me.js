@@ -25,7 +25,8 @@ router.get('/courses', requireAuth, async (req, res, next) => {
   try {
     const enrollments = await Enrollment.find({ userId: req.user.userId })
       .populate('courseId')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     const courses = enrollments
       .filter(e => e.courseId) //if course deleted, skip
       .map(e => ({
