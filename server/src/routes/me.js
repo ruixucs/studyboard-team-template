@@ -1,14 +1,4 @@
-/**
- * ============================================================================
- *  Feature C — Likes & Profile
- *  Owner: Donovan
- *  File:  server/src/routes/me.js
- *
- *  Aggregate endpoints for the current user, used by Dashboard and Profile pages.
- *
- *    1. GET /api/me/courses     - all courses the user is enrolled in
- *    2. GET /api/me/activity    - the user's posts + total likes received
- * ============================================================================
+/* Donovan
  */
 
 import { Router } from 'express';
@@ -18,9 +8,7 @@ import { requireAuth } from '../middleware/requireAuth.js';
 
 const router = Router();
 
-// ----------------------------------------------------------------------------
-// 1) GET /api/me/courses
-// ----------------------------------------------------------------------------
+//GET /api/me/courses (enrolled cses)
 router.get('/courses', requireAuth, async (req, res, next) => {
   try {
     const enrollments = await Enrollment.find({ userId: req.user.userId })
@@ -42,13 +30,8 @@ router.get('/courses', requireAuth, async (req, res, next) => {
   }
 });
 
-// ----------------------------------------------------------------------------
-// 2) GET /api/me/activity
-// ----------------------------------------------------------------------------
-//  Returns the user's posts (most recent 100) + total likes received across them.
-//  Used by the Profile page.
-//
-//  Response shape:
+//GET /api/me/activity (users posts + likes received)
+//  response shape:
 //    {
 //      posts: Array<{ id, courseId, title, likeCount, replyCount, createdAt }>,
 //      totalLikesReceived: number
