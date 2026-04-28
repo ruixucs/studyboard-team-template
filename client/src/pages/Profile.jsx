@@ -1,23 +1,4 @@
-/**
- * ============================================================================
- *  Feature C — Likes & Profile
- *  Owner: Donovan
- *  File:  client/src/pages/Profile.jsx
- *
- *  My account page. URL: /me
- *
- *  Shows:
- *    - User name + email (header)
- *    - Stats grid (2 cells): "Posts" count, "Likes received" total
- *    - List of the user's posts as small links to each post
- *
- *  APIs:
- *    api.get('/me/activity')
- *      -> { posts: [{ id, courseId, title, likeCount, replyCount, createdAt }],
- *           totalLikesReceived }
- *
- *  Local state: data, err
- * ============================================================================
+/* Donovan
  */
 
 import { useEffect, useState } from 'react';
@@ -31,7 +12,7 @@ export default function Profile() {
   const [err, setErr] = useState(null);
 
   useEffect(() => {
-    api.get('/me/activity')
+    api.get('/me/activity') //{ posts: [{ id, courseId, title, likeCount, replyCount, createdAt }], totalLikesReceived }
       .then(r => setData(r.data))
       .catch(e => setErr(apiError(e)));
   }, []);
