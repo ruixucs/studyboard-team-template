@@ -1,21 +1,4 @@
-/**
- * ============================================================================
- *  Feature C — Likes & Profile
- *  Owner: Donovan
- *  File:  server/src/routes/likes.js
- *    1. POST   /api/posts/:id/like     - current user likes a post
- *    2. DELETE /api/posts/:id/like     - current user unlikes a post
- *
- *  keep Post.likeCount in sync:
- *    Each like creation increments Post.likeCount by 1.
- *    Each like deletion decrements Post.likeCount by 1.
- *    Use $inc, never compute from scratch since multiple users may like at once.
- *
- *    If a user "likes again", catch err.code === 11000 and return the current
- *    likeCount with `alreadyLiked: true` --> do NOT increment again.
- *
- *  Both endpoints respond with: { likeCount: <fresh value from DB> }
- * ============================================================================
+/* Donovan
  */
 
 import { Router } from 'express';
@@ -27,9 +10,7 @@ import { ApiError } from '../middleware/errorHandler.js';
 
 const router = Router();
 
-// ----------------------------------------------------------------------------
-// 1) POST /api/posts/:id/like
-// ----------------------------------------------------------------------------
+//POST /api/posts/:id/like (like)
 router.post('/posts/:id/like', requireAuth, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
@@ -57,9 +38,7 @@ router.post('/posts/:id/like', requireAuth, async (req, res, next) => {
   }
 });
 
-// ----------------------------------------------------------------------------
-// 2) DELETE /api/posts/:id/like
-// ----------------------------------------------------------------------------
+//DELETE /api/posts/:id/like (unlike)
 router.delete('/posts/:id/like', requireAuth, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
