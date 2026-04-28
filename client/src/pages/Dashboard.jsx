@@ -1,19 +1,4 @@
-/**
- * ============================================================================
- *  Feature C — Likes & Profile
- *  Owner: Donovan
- *  File:  client/src/pages/Dashboard.jsx
- *
- *  Post-login home. URL: /dashboard
- *
- *  Greets the user, then shows the courses they're enrolled in as a grid.
- *  If they have no enrollments yet, show an empty-state with a link to /courses.
- *
- *  APIs:
- *    api.get('/me/courses')  -> [{ id, code, name, faculty, enrolledAt }, ...]
- *
- *  Local state: courses, err
- * ============================================================================
+/* Donovan
  */
 
 import { useEffect, useState } from 'react';
@@ -28,7 +13,7 @@ export default function Dashboard() {
   const [err, setErr] = useState(null);
 
   useEffect(() => {
-    api.get('/me/courses')
+    api.get('/me/courses') //{ id, code, name, faculty, enrolledAt }
       .then(r => setCourses(r.data))
       .catch(e => setErr(apiError(e)));
   }, []);
