@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, apiError } from '../lib/api.js';
 import CourseCard from '../components/CourseCard.jsx';
 
+// Six cards fits the page well on desktop while keeping mobile scrolling reasonable.
 const PAGE_SIZE = 6;
 
 export default function CourseList() {
@@ -26,6 +27,7 @@ export default function CourseList() {
   const [onlyEnrolled, setOnlyEnrolled] = useState(false);
   const [page, setPage] = useState(1);
 
+  // Loads courses from the backend.Used for the first page load and after changes
   const load = async (search = q) => {
     setBusy(true);
     setErr('');
@@ -40,6 +42,7 @@ export default function CourseList() {
     }
   };
 
+  // Same button handles both joining and leaving a course
   const toggleEnroll = async (course) => {
     setErr('');
     try {
@@ -54,6 +57,7 @@ export default function CourseList() {
     }
   };
 
+  // Adds a new course by code, then refreshes the list so the new card appears
   const onAdd = async (e) => {
     e.preventDefault();
     if (!newCode.trim()) return;
@@ -72,6 +76,7 @@ export default function CourseList() {
     }
   };
 
+  // Admin delete has a confirmation step because it also removes related course content
   const onDeleteCourse = async (course) => {
     const ok = window.confirm(`Delete ${course.code} - ${course.name}? This cannot be undone.`);
     if (!ok) return;
@@ -91,16 +96,16 @@ export default function CourseList() {
   useEffect(() => {
     load('');
   }, []);
-
+  // When filters change, jump back to the first page so results do not look empty
   useEffect(() => {
     setPage(1);
   }, [sortBy, onlyEnrolled]);
-
+  // Applies the local filter and sort before pagination
   const visibleCourses = useMemo(() => {
     const source = onlyEnrolled ? courses.filter((course) => course.enrolled) : [...courses];
     return source.sort((a, b) => a[sortBy].localeCompare(b[sortBy], undefined, { sensitivity: 'base' }));
   }, [courses, onlyEnrolled, sortBy]);
-
+  // Pagination is calculated after filtering so the count matches what the user sees
   const totalPages = Math.max(1, Math.ceil(visibleCourses.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pagedCourses = visibleCourses.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -118,7 +123,7 @@ export default function CourseList() {
         placeholder="Search courses by code, name, or faculty"
         className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 px-3 py-2 mb-4"
       />
-
+      {/*Local controls for sorting and showing only the user's enrolled courses*/}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <label htmlFor="sortBy" className="text-sm text-slate-700 dark:text-slate-300">
@@ -146,6 +151,7 @@ export default function CourseList() {
         </label>
       </div>
 
+      {/*Course creation is tucked into details so the main list stays clean*/}
       <details className="mb-4 rounded-lg border border-slate-200 dark:border-slate-800 p-4">
         <summary className="cursor-pointer font-medium text-slate-900 dark:text-slate-100">Add a course</summary>
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
