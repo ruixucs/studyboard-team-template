@@ -1,3 +1,12 @@
+/*
+  Jiahao Liang (261073874)
+  COMP 307 Team Project
+
+  Primary contributions in this file:
+  - Course card component layout
+  - Course navigation link rendering
+  - Card action integration for enrollment controls
+*/
 import { Link } from 'react-router-dom';
 
 export default function CourseCard({ course, action }) {

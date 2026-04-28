@@ -1,3 +1,13 @@
+/*
+  Jiahao Liang (261073874)
+  COMP 307 Team Project
+
+  Primary contributions in this file:
+  - Course search and filtering logic (including flexible course code search)
+  - Course add/enroll/unenroll routes
+  - Admin course deletion flow and related cleanup
+  - Catalog lookup integration and enrollment handling
+*/
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import { Course } from '../models/Course.js';
@@ -22,7 +32,6 @@ function buildSearchRegex(q) {
   // Allow optional whitespace at letter↔digit transitions
   pattern = pattern.replace(/([A-Za-z])(\d)/g, '$1\\s*$2');
   pattern = pattern.replace(/(\d)([A-Za-z])/g, '$1\\s*$2');
-  // Collapse any user-typed whitespace into \s* so "COMP  307" still matches
   pattern = pattern.replace(/\s+/g, '\\s*');
   return new RegExp(pattern, 'i');
 }

@@ -1,3 +1,13 @@
+/*
+  Jiahao Liang (261073874)
+  COMP 307 Team Project
+
+  Primary contributions in this file:
+  - Course listing page implementation
+  - Search, sorting and enrolled-course filtering
+  - Pagination controls
+  - Add course and enrollment interaction logic
+*/
 import { useEffect, useMemo, useState } from 'react';
 import { api, apiError } from '../lib/api.js';
 import CourseCard from '../components/CourseCard.jsx';
