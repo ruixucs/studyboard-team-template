@@ -1,23 +1,4 @@
-/**
- * ============================================================================
- *  Feature C — Likes & Profile
- *  Owner: Donovan
- *  File:  client/src/components/LikeButton.jsx
- *
- *  Updates the count optimistically (instant UI feedback) and reverts on error.
- *
- *  Used by:
- *    - PostDetail (passed `postId`, `initialLiked`, `initialCount`)
- *
- *  APIs (your own backend in server/src/routes/likes.js):
- *    POST   /api/posts/:id/like   -> { likeCount }
- *    DELETE /api/posts/:id/like   -> { likeCount }
- *
- *  Local state:
- *    liked  (bool)   -- current liked state
- *    count  (number) -- current like count
- *    busy   (bool)   -- guard against double-click
- * ============================================================================
+/* Donovan
  */
 
 import { useState } from 'react';
@@ -26,7 +7,7 @@ import { api, apiError } from '../lib/api.js';
 export default function LikeButton({ postId, initialLiked, initialCount, onChange }) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false); //prevent dblclick
 
   const toggle = async () => {
     if (busy) return;
