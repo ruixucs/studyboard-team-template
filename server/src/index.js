@@ -9,8 +9,7 @@ import meRouter from './routes/me.js';
 import postsRouter from './routes/posts.js';
 import repliesRouter from './routes/replies.js';
 import likesRouter from './routes/likes.js';
-import dns from "node:dns/promises";
-dns.setServers(["1.1.1.1", "8.8.8.8"]);
+
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
